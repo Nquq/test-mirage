@@ -1,8 +1,9 @@
 import {useEffect, useState} from "react";
 import {createServer, Model} from "miragejs"
-import Upload from "rc-upload";
-import {string} from "prop-types";
+import styles from '../styles/Home.module.css'
 import axios from "axios";
+import {FileUploader} from "react-drag-drop-files";
+import {Table} from "antd";
 
 interface IFile {
     id: number,
@@ -43,31 +44,40 @@ createServer({
         // @ts-ignore
         server.create('file', {name: 'photo3.png', size: 1354})
     },
-
-
 })
+
+const columns = [
+    {
+      title: 'ID',
+      dataIndex: 'id',
+      key: 'id'
+    },
+    {
+        title: 'Name',
+        dataIndex: 'name',
+        key: 'name',
+    },
+    {
+        title: 'Size',
+        dataIndex: 'size',
+        key: 'size',
+    }
+];
 
 export default function Home() {
     const [files, setFiles] = useState<IFile[]>([])
 
-    const props = {
-        action: '/api/files'
-        },
-        customRequest() {
-            axios.post(action, file)
+    const handleChange = async (file:any) => {
+        const tempData:IFile[] = [];
+        for (let i = 0; i < file.length; i++) {
+            const {name, size} = file[i];
+
+            const response = await fetch('/api/files', {method: 'POST', body: JSON.stringify({name,size})})
+            const json = await response.json()
+            tempData.push(json.files)
         }
-        // action: async ({name,size}):any => {
-        //     const response = await fetch('/api/files', {method: 'POST', body: JSON.stringify({name, size})})
-        //     const json = await response.json()
-        //
-        //     setFiles([...files, json.files])
-        // },
-        // onStart: async ({name, size}:any) => {
-        //     const response = await fetch('/api/files', {method: 'POST', body: JSON.stringify({name, size})})
-        //     const json = await response.json()
-        //
-        //     setFiles([...files, json.files])
-        // },
+        setFiles([...files,...tempData])
+
     }
 
     useEffect(() => {
@@ -82,39 +92,9 @@ export default function Home() {
 
     return (
         <>
-            {files?.length > 0 ?
-                <table>
-                <thead>
-                <tr>
-                    <th>id</th>
-                    <th>name</th>
-                    <th>size</th>
-                </tr>
-                </thead>
-                <tbody>
-                {files?.map(file => (
-                    <tr key={file.id}>
-                        <td>{file.id}</td>
-                        <td>{file.name}</td>
-                        <td>{file.size}</td>
-                    </tr>
-                ))}
-                </tbody>
-            </table> : <p>Loading...</p>}
-            <button>
-                {/*@ts-ignore*/}
-                <Upload {...props}>
-                    <a>Добавить файл</a>
-                </Upload>
-            </button>
+            <Table dataSource={files} columns={columns}/>
+            <FileUploader handleChange={handleChange} multiple label="Upload or drop a file right here" name='file'/>
         </>
-        // <ul>
-        //   {movies?.map((movie) => (
-        //       <li key={movie.id}>
-        //         {movie.fileName} ({movie.weight})
-        //       </li>
-        //   ))}
-        // </ul>
     )
 }
 
