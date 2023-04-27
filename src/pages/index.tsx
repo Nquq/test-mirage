@@ -1,14 +1,13 @@
 import {useEffect, useState} from "react";
 import {createServer, Model} from "miragejs"
-import styles from '../styles/Home.module.css'
-import axios from "axios";
 import {FileUploader} from "react-drag-drop-files";
 import {Table} from "antd";
 
 interface IFile {
     id: number,
     name: string,
-    size: number
+    size: number,
+    type:string
 }
 
 createServer({
@@ -31,53 +30,49 @@ createServer({
             return schema.files.create(attrs)
         })
 
+        this.delete('/files/:id', (schema, request) => {
+            let id = request.params.id
+            //@ts-ignore
+            return schema.files.find(id).destroy()
+        })
+
         this.passthrough()
     },
 
     seeds(server) {
+        let key = 0;
         // @ts-ignore
-        server.create('file', {name: 'photo.png', size: 134})
+        server.create('file', {key:key++,name: 'photo.png', size: 134, type: 'image/png'})
         // @ts-ignore
-        server.create('file', {name: 'photo1.png', size: 1344})
+        server.create('file', {key:key++,name: 'photo1.png', size: 1344, type: 'image/png'})
         // @ts-ignore
-        server.create('file', {name: 'photo2.png', size: 1334})
+        server.create('file', {key:key++,name: 'photo2.png', size: 1334, type: 'image/png'})
         // @ts-ignore
-        server.create('file', {name: 'photo3.png', size: 1354})
+        server.create('file', {key:key++,name: 'photo3.png', size: 1354, type: 'image/png'})
     },
 })
-
-const columns = [
-    {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id'
-    },
-    {
-        title: 'Name',
-        dataIndex: 'name',
-        key: 'name',
-    },
-    {
-        title: 'Size',
-        dataIndex: 'size',
-        key: 'size',
-    }
-];
 
 export default function Home() {
     const [files, setFiles] = useState<IFile[]>([])
 
     const handleChange = async (file:any) => {
+        console.log(file)
         const tempData:IFile[] = [];
         for (let i = 0; i < file.length; i++) {
-            const {name, size} = file[i];
+            const {name, size, type} = file[i];
 
-            const response = await fetch('/api/files', {method: 'POST', body: JSON.stringify({name,size})})
+            const response = await fetch('/api/files', {method: 'POST', body: JSON.stringify({key:name,name,size, type})})
             const json = await response.json()
             tempData.push(json.files)
         }
         setFiles([...files,...tempData])
 
+    }
+
+    const handleDelete = async (id:number) => {
+        const response = await fetch(`/api/files/${id}`, {method: 'DELETE'})
+
+        setFiles(files.filter((file)=> file.id !== id))
     }
 
     useEffect(() => {
@@ -89,6 +84,30 @@ export default function Home() {
         }
         fetchingMovies();
     },[])
+
+    const columns = [
+        {
+            title: 'Name',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Size',
+            dataIndex: 'size',
+            key: 'size',
+        },
+        {
+            title: 'Type',
+            dataIndex: 'type',
+            key: 'type'
+        },
+        {
+            title: 'Action',
+            dataIndex: '',
+            key: 'x',
+            render: (_:any,record:IFile) => <button onClick={()=>handleDelete(record.id)}>Delete</button>
+        }
+    ];
 
     return (
         <>
