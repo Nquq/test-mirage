@@ -108,9 +108,8 @@ export default function Fluent() {
     async onSuccess(file: Record<string, any>) {
       console.log("Success", file);
       const { name, size, type } = file;
-      const response = await fetch("/api/files");
-      const json = await response.json();
-      setFiles(json.files);
+
+      setFiles((prevState) => [...prevState, { name, size, type, id: name }]);
     },
     customRequest: async function ({ file, onSuccess }) {
       // @ts-ignore
